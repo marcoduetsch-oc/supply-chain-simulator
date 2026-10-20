@@ -1,0 +1,14 @@
+[server]
+headless = true
+fileWatcherType = "none"
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
+primaryColor = "#1f77b4"
+
+# Für Einbettung als iframe auf duetsch.net (später) zusätzlich nötig:
+# enableCORS = false
+# enableXsrfProtection = false

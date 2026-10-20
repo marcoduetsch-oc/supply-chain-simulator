@@ -55,11 +55,13 @@ streamlit run dashboard.py
 ## 📦 Requirements
 
 ```
-streamlit>=1.50
-pandas>=2.0
-plotly>=6.0
-numpy>=2.0
+streamlit==1.50.0
+pandas==2.3.3
+plotly==6.8.0
+numpy==2.0.2
 ```
+
+Gepinnt auf die lokal verifizierten Versionen (reproduzierbare Deploys). Aktualisieren: `pip install -U <paket>` → Versionen hier nachziehen.
 
 ---
 
@@ -126,7 +128,11 @@ TRUCK_CAPACITY = 50        # LKW-Kapazität
 supply-chain-sim/
 ├── dashboard.py          # Streamlit-Dashboard
 ├── run.py                # Headless CLI-Runner
-├── requirements.txt      # Python-Dependencies
+├── requirements.txt      # Python-Dependencies (gepinnt)
+├── railway.toml          # Railway-Deploy (Start-Command, Healthcheck)
+├── .python-version       # Python 3.12 für Deploy
+├── .streamlit/
+│   └── config.toml       # Streamlit-Server/Theme (headless)
 ├── README.md             # ← Du bist hier
 ├── .gitignore
 ├── venv/                 # Virtuelle Umgebung (lokal)
@@ -157,7 +163,7 @@ supply-chain-sim/
 python run.py
 
 # Dashboard starten
-streamilt run dashboard.py
+streamlit run dashboard.py
 
 # Neue Agenten hinzufügen
 # 1. Klasse in agents.py (extends BaseAgent)
@@ -172,12 +178,21 @@ Jeder Agent implementiert zwei Methoden:
 
 ## 🚢 Deployment
 
-Der Simulator kann auf jedem Python-/Streamlit-Host deployed werden:
+### Railway (empfohlen, Produktion)
 
-```bash
-# Quick deploy mit Streamlit Community Cloud
-# → streamlit.io/cloud → Repo verbinden → dashboard.py als Entrypoint
-```
+Repo ist deploy-fertig: `railway.toml` (Start-Command + Healthcheck), `.python-version` (3.12), `.streamlit/config.toml` (Headless, Telemetrie aus).
+
+1. Railway → **New Project → Deploy from GitHub repo** → `marcoduetsch-oc/supply-chain-simulator`
+2. Service → Settings → Region **EU West Metal (Amsterdam)** (CH-Kunden/revDSG)
+3. Settings → Networking → **+ Custom Domain** (`biergame.duetsch.net`) → angezeigtes CNAME-Ziel beim DNS-Provider eintragen → TLS automatisch (Let's Encrypt)
+4. Healthcheck `/_stcore/health` wird aus `railway.toml` gelesen
+
+**Kosten:** Hobby $5/Mt Minimum inkl. $5 Nutzungsguthaben (RAM ~$10/GB-Mt, CPU ~$20/vCPU-Mt nur bei Nutzung, Egress $0.05/GB). App ist zustandslos → kein Volume/DB nötig, 0,5 GB RAM ≈ $5/Mt.
+**Wichtig:** Der Railway-Free-Plan hat **0 Custom Domains** → eigene Domain erfordert Hobby.
+
+### Alternative: Streamlit Community Cloud
+
+→ streamlit.io/cloud → Repo verbinden → `dashboard.py` als Entrypoint. Kostenlos, aber ohne eigene Domain und mit Kaltstart.
 
 ---
 
