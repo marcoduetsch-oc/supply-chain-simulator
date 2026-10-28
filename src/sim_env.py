@@ -31,6 +31,8 @@ class Simulation:
             "stockout_cost": [],
             "total_cost": [],
             "revenue": [],
+            "revenue_window": [],  # Umsatz seit Warmup (Auswertungsfenster)
+            "cost_window": [],     # Kosten seit Warmup (Auswertungsfenster)
             "fill_rate_30": [],    # rolling 30-day fill rate
         }
 
@@ -57,6 +59,10 @@ class Simulation:
             "total_cost": 0.0,
             "total_revenue": 0.0,
             "total_stockout_cost": 0.0,
+            # Baseline für das Auswertungsfenster (nach Warmup) — damit
+            # Umsatz/Kosten dieselben Tage abdecken wie Nachfrage/Bedient.
+            "revenue_base": 0.0,
+            "cost_base": 0.0,
             # Kostenaufschlüsselung
             "cost_material": 0.0,
             "cost_orders": 0.0,
@@ -92,6 +98,12 @@ class Simulation:
             self.state["today_produced"] = 0
             self.state["today_shipped"] = 0
             self.state["today_stockouts"] = 0
+
+            # Auswertungsfenster beginnt: Baseline für Umsatz/Kosten setzen,
+            # damit Geldkennzahlen dieselben Tage abdecken wie die übrigen KPIs.
+            if tick == self.warmup:
+                self.state["revenue_base"] = self.state["total_revenue"]
+                self.state["cost_base"] = self.state["total_cost"]
 
             # 1. Deliveries arriving this tick
             self._process_deliveries(tick)
@@ -182,6 +194,8 @@ class Simulation:
         self.history["stockout_cost"].append(s["total_stockout_cost"])
         self.history["total_cost"].append(s["total_cost"])
         self.history["revenue"].append(s["total_revenue"])
+        self.history["revenue_window"].append(s["total_revenue"] - s["revenue_base"])
+        self.history["cost_window"].append(s["total_cost"] - s["cost_base"])
 
         # Fill rate: am Bestelltag erfüllte Nachfrage vs. Nachfrage.
         # NICHT die zugestellten Sendungen — die hinken um die Versandzeit

@@ -20,7 +20,7 @@ def build():
     ])
 
 
-def run_case(label, **over):
+def run_case(label, **over) -> dict:
     random.seed(42)
     for k, v in over.items():
         setattr(cfg, k, v)
@@ -37,6 +37,9 @@ def run_case(label, **over):
           f"backlog={sim.state['backlog']}")
     print(f"  cash=CHF {sim.state['cash']:,.0f}  cost=CHF {sim.state['total_cost']:,.0f}  "
           f"revenue=CHF {sim.state['total_revenue']:,.0f}")
+    print(f"  Fenster (ab Warmup): Umsatz CHF {h['revenue_window'][-1]:,.0f} | "
+          f"Kosten CHF {h['cost_window'][-1]:,.0f} | "
+          f"Gewinn CHF {h['revenue_window'][-1] - h['cost_window'][-1]:,.0f}")
     print(f"  Kosten: Material {sim.state['cost_material']:,.0f} | Orders {sim.state['cost_orders']:,.0f} | "
           f"Prod {sim.state['cost_production']:,.0f} | Lager {sim.state['cost_holding']:,.0f} | "
           f"Penalty {sim.state['cost_stockout']:,.0f}")
@@ -83,3 +86,31 @@ for label, r in [("A", a), ("B", b), ("C", c), ("D1", d1), ("D2", d2), ("D3", d3
 print("  stockouts <= demand in allen Szenarien:", ok)
 print("  Service-Level monoton (mehr Toleranz = weniger Stockouts):",
       d1["stockouts"] >= d2["stockouts"] >= d3["stockouts"])
+
+# Abstimmung der Geldkennzahlen (Fenster ab Warmup vs. Gesamtlauf)
+print("\n=== Abstimmung Geldkennzahlen ===")
+for label, r in [("A", a), ("B", b), ("C", c), ("D1", d1), ("D2", d2), ("D3", d3)]:
+    st, h = r["sim"].state, r["h"]
+    if abs(st["cash"] - (100_000 + st["total_revenue"] - st["total_cost"])) > 1e-6:
+        print(f"  FEHLER {label}: Kassen-Identität verletzt "
+              f"(cash={st['cash']:.2f} vs {100_000 + st['total_revenue'] - st['total_cost']:.2f})")
+        ok = False
+    blocks = sum(st[k] for k in ("cost_material", "cost_orders", "cost_production",
+                                "cost_holding", "cost_stockout"))
+    if abs(blocks - st["total_cost"]) > 1e-6:
+        print(f"  FEHLER {label}: Kostensumme ({blocks:.2f}) != total_cost ({st['total_cost']:.2f})")
+        ok = False
+    rev_w, cost_w = h["revenue_window"][-1], h["cost_window"][-1]
+    delivered = rev_w / 100.0
+    tol = 3 * (r["demand"] / len(h["demand"]))  # Ankunfts-Verzug an der Fenstergrenze
+    if delivered > r["demand"] + tol:
+        print(f"  FEHLER {label}: zugestellte Einheiten ({delivered:,.0f}) > "
+              f"Nachfrage ({r['demand']}) + Toleranz ({tol:,.0f})")
+        ok = False
+    if delivered > sum(h["shipments"]) + tol:
+        print(f"  FEHLER {label}: zugestellte Einheiten ({delivered:,.0f}) > "
+              f"versandte Einheiten ({sum(h['shipments']):,}) + Toleranz")
+        ok = False
+print("  Kassen-Identität (cash = 100'000 + Umsatz − Kosten):", ok)
+print("  Kostensumme == total_cost:", ok)
+print("  Zugestellt <= Nachfrage/Versand (Fenstertoleranz 3 Tage):", ok)

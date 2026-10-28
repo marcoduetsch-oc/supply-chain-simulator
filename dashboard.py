@@ -120,7 +120,9 @@ with col4:
     st.metric("⚠️ Stockouts (Einheiten)", f"{total_stockouts:,}", f"{pct:.1f}% der Nachfrage",
               delta_color="inverse")
 with col5:
-    profit = state["total_revenue"] - state["total_cost"]
+    revenue_w = history["revenue_window"][-1] if history["revenue_window"] else 0.0
+    cost_w = history["cost_window"][-1] if history["cost_window"] else 0.0
+    profit = revenue_w - cost_w
     st.metric("💰 Gewinn/Verlust", f"CHF {profit:,.0f}", f"{profit:+,.0f}",
               delta_color="normal" if profit >= 0 else "inverse")
 
@@ -128,6 +130,14 @@ st.caption(
     f"Service-Level {service_days} Tage → **{service_level:.1f}%** der Nachfrage innerhalb "
     f"der Frist erfüllt · Geliefert (zugestellt): {total_shipped:,} Einheiten · "
     f"Offener Auftragsbestand: {state['backlog']:,}"
+)
+st.caption(
+    f"⏱️ Auswertungsfenster: **Tag {sim.warmup + 1}–{sim.warmup + len(history['tick'])}** "
+    f"(nach Warmup) — Nachfrage, Bedient, Stockouts, Umsatz und Kosten beziehen sich alle "
+    f"auf dieselben {len(history['tick'])} Tage.  \n"
+    f"Abstimmung: Umsatz CHF {revenue_w:,.0f} (= {revenue_w / 100.0:,.0f} zugestellte "
+    f"Einheiten × CHF 100) − Kosten CHF {cost_w:,.0f} = **CHF {profit:,.0f}** · "
+    f"Kasse inkl. Warmup: CHF {state['cash']:,.0f}"
 )
 
 # ── Charts ───────────────────────────────────────────────────────
@@ -172,11 +182,11 @@ fig_fr.update_yaxes(range=[0, 105], title_text="%")
 
 # Cash & Cost
 fig_cash = go.Figure()
-fig_cash.add_trace(go.Scatter(x=history["tick"], y=history["revenue"],
-                              name="Umsatz (kum.)", line=dict(color="#2ca02c")))
-fig_cash.add_trace(go.Scatter(x=history["tick"], y=history["total_cost"],
-                              name="Kosten (kum.)", line=dict(color="#d62728")))
-fig_cash.update_layout(title="💰 Umsatz vs. Kosten", hovermode="x unified",
+fig_cash.add_trace(go.Scatter(x=history["tick"], y=history["revenue_window"],
+                              name="Umsatz (kum., ab Warmup)", line=dict(color="#2ca02c")))
+fig_cash.add_trace(go.Scatter(x=history["tick"], y=history["cost_window"],
+                              name="Kosten (kum., ab Warmup)", line=dict(color="#d62728")))
+fig_cash.update_layout(title="💰 Umsatz vs. Kosten (Auswertungsfenster)", hovermode="x unified",
                        height=300, margin=dict(l=0, r=0, t=40, b=0))
 fig_cash.update_yaxes(title_text="CHF")
 
