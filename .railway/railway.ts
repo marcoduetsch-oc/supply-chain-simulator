@@ -9,7 +9,6 @@ export default defineRailway(() => {
         "streamlit run dashboard.py --server.port $PORT --server.address 0.0.0.0 --server.headless true --browser.gatherUsageStats false",
       healthcheckPath: "/_stcore/health",
       healthcheckTimeout: 100,
-      restartPolicyType: "ON_FAILURE",
       restartPolicyMaxRetries: 3,
     },
     replicas: { "europe-west4-drams3a": 1 },
